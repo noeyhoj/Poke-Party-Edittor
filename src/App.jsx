@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle, Search, RotateCcw, Check, X,
-  Sword, Shield, HeartHandshake, Sparkles, Users, Info, Sun, Moon,
+  Sword, Shield, HeartHandshake, Sparkles, Users, Info, Sun, Moon, Gem,
 } from 'lucide-react'
 import { TYPES, TYPE_LABEL_KO, TYPE_COLOR, combinedMultiplier, getMultiplier } from './data/typeChart'
 import { POKEMON } from './data/pokemonData'
@@ -21,6 +21,31 @@ const MAX_TRAIT_PER_STAT = 32
 const MAX_TRAIT_TOTAL = 66
 const COMPUTED_STAT_SCALE_MAX = 400
 const DEFAULT_NATURE = 'hardy'
+const DEFAULT_ITEM = 'none'
+
+// 메가스톤 외에 실전에서 자주 쓰이는 대표 도구들. statKey/mult가 있는 항목만 실전 능력치에 반영된다.
+// (실제 게임 내 공식 한국어 명칭 기준)
+const HELD_ITEMS = [
+  // ── 능력치를 직접 배율로 바꾸는 도구 ──
+  { key: 'choice-band', name: '구애머리띠', statKey: 'attack', mult: 1.5, note: '공격 ×1.5 (기술 고정)' },
+  { key: 'choice-specs', name: '구애안경', statKey: 'spAttack', mult: 1.5, note: '특공 ×1.5 (기술 고정)' },
+  { key: 'choice-scarf', name: '구애스카프', statKey: 'speed', mult: 1.5, note: '스피드 ×1.5 (기술 고정)' },
+  { key: 'assault-vest', name: '돌격조끼', statKey: 'spDefense', mult: 1.5, note: '특방 ×1.5 (변화기 사용 불가)' },
+  // ── 정보 제공용(실전 능력치 수치에는 반영되지 않는 배틀 효과) ──
+  { key: 'leftovers', name: '먹다남은음식', note: '매 턴 최대 HP 1/16 회복' },
+  { key: 'life-orb', name: '생명의 구슬', note: '기술 위력 ×1.3, 사용 시 반동 데미지(최대 HP 1/10)' },
+  { key: 'focus-sash', name: '기합의띠', note: 'HP가 가득 찬 상태에서 원킬 공격을 HP 1로 버팀 (1회용)' },
+  { key: 'focus-band', name: '기합의머리띠', note: '기절할 공격을 약 10% 확률로 HP 1로 버팀 (재사용 가능)' },
+  { key: 'rocky-helmet', name: '울퉁불퉁멧', note: '접촉 기술을 맞으면 상대에게 최대 HP 1/6 반사 데미지' },
+  { key: 'expert-belt', name: '달인의띠', note: '효과가 굉장한(약점을 찌르는) 기술의 위력 ×1.2' },
+  { key: 'weakness-policy', name: '약점보험', note: '효과가 굉장한 공격을 맞으면 공격·특공 2랭크 상승 (1회용)' },
+  { key: 'air-balloon', name: '풍선', note: '땅 타입 기술 무효화 (피격 시 소멸)' },
+  { key: 'shell-bell', name: '조개껍질방울', note: '입힌 데미지의 1/8만큼 HP 회복' },
+  { key: 'big-root', name: '큰뿌리', note: 'HP 흡수 기술의 회복량 증가' },
+  { key: 'eviolite', name: '진화의휘석', note: '진화 가능한(미완성) 포켓몬 한정 방어·특방 ×1.5 (자동 계산에는 미반영, 진화 가능 여부 직접 확인)' },
+]
+const HELD_ITEM_BY_KEY = new Map(HELD_ITEMS.map((it) => [it.key, it]))
+const ALL_MEGA_KEYS = new Set(Object.values(MEGA_EVOLUTIONS).flat().map((v) => v.key))
 
 const ROLE_OPTIONS = [
   { value: '', label: '역할 미지정' },
@@ -109,6 +134,7 @@ function sanitizeTeamArray(rawTeam) {
       role: m.role || '',
       nature: NATURE_BY_KEY.has(m.nature) ? m.nature : DEFAULT_NATURE,
       points: sanitizeTraitPoints(m.points),
+      item: HELD_ITEM_BY_KEY.has(m.item) ? m.item : DEFAULT_ITEM,
     }))
     .slice(0, MAX_TEAM_SIZE)
 }
@@ -208,10 +234,25 @@ function getEffective(member) {
   return { name: base.name, types: base.types, stats: base.stats, isMega: false, spriteId: base.id }
 }
 
-// 종족값 폼(메가진화 포함)에 성격·특성치를 반영한 실전 능력치를 계산한다.
+// 도구가 능력치 배율 효과를 갖는 경우(구애 시리즈 등) 해당 스탯에 배율을 적용한다.
+function applyItemToStats(stats, itemKey) {
+  const item = HELD_ITEM_BY_KEY.get(itemKey)
+  if (!item || !item.statKey) return stats
+  return { ...stats, [item.statKey]: Math.floor(stats[item.statKey] * item.mult) }
+}
+
+// 종족값 폼(메가진화 포함)에 성격·특성치·도구 효과를 반영한 실전 능력치를 계산한다.
 function getRealStats(member) {
   const eff = getEffective(member)
-  return computeRealStats(eff.stats, member.nature, member.points)
+  const base = computeRealStats(eff.stats, member.nature, member.points)
+  return applyItemToStats(base, member.item)
+}
+
+// 메가진화 폼 키에서 실제 게임 내 메가스톤 명칭(OOO나이트/나이트X/나이트Y)을 유도한다.
+function megaStoneName(baseName, variantKey) {
+  if (variantKey.endsWith('-mega-x')) return `${baseName}나이트X`
+  if (variantKey.endsWith('-mega-y')) return `${baseName}나이트Y`
+  return `${baseName}나이트`
 }
 
 function PokemonIcon({ name, types, size = 52, spriteId }) {
@@ -554,7 +595,6 @@ function AddPokemonSection({ team, onToggle }) {
 function PartySection({
   team,
   onRemove,
-  onFormChange,
   onRoleChange,
   presets,
   onSavePreset,
@@ -590,7 +630,8 @@ function PartySection({
           const base = POKEMON_BY_ID.get(member.id)
           const eff = getEffective(member)
           const realStats = getRealStats(member)
-          const megas = canMegaEvolve(base) ? MEGA_EVOLUTIONS[base.dex] || [] : []
+          const isMegaEquipped = canMegaEvolve(base) && member.megaForm && member.megaForm !== 'base'
+          const equippedItem = !isMegaEquipped ? HELD_ITEM_BY_KEY.get(member.item) : null
           return (
             <div className="party-card" key={member.id}>
               <button className="remove-btn" onClick={() => onRemove(member.id)}>
@@ -609,19 +650,15 @@ function PartySection({
                 <span className="speed-only-value">{realStats.speed}</span>
               </div>
 
-              {megas.length > 0 && (
-                <select
-                  className="select-field"
-                  value={member.megaForm || 'base'}
-                  onChange={(e) => onFormChange(member.id, e.target.value)}
-                >
-                  <option value="base">{base.name} (기본 폼)</option>
-                  {megas.map((m) => (
-                    <option key={m.key} value={m.key}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
+              {isMegaEquipped && (
+                <div className="item-readonly-badge">
+                  <Gem size={11} /> {megaStoneName(base.name, member.megaForm)} 장착 중
+                </div>
+              )}
+              {equippedItem && (
+                <div className="item-readonly-badge">
+                  <Gem size={11} /> {equippedItem.name} 장착 중
+                </div>
               )}
 
               <select
@@ -1014,7 +1051,7 @@ function natureOptionLabel(n) {
   return `${n.name} (${plusLabel}↑ ${minusLabel}↓)`
 }
 
-function StatCalculatorSection({ team, onPointsChange, onNatureChange }) {
+function StatCalculatorSection({ team, onPointsChange, onNatureChange, onItemChange }) {
   if (team.length === 0) {
     return (
       <section className="section">
@@ -1049,6 +1086,8 @@ function StatCalculatorSection({ team, onPointsChange, onNatureChange }) {
         {team.map((member) => {
           const eff = getEffective(member)
           const pointTotal = Object.values(member.points).reduce((a, b) => a + b, 0)
+          const base = POKEMON_BY_ID.get(member.id)
+          const megas = canMegaEvolve(base) ? MEGA_EVOLUTIONS[base.dex] || [] : []
 
           return (
             <div className="trait-card" key={member.id}>
@@ -1079,6 +1118,43 @@ function StatCalculatorSection({ team, onPointsChange, onNatureChange }) {
                 </select>
               </div>
 
+              <div className="trait-nature-row">
+                <label>
+                  <Gem size={12} style={{ verticalAlign: -1, marginRight: 3 }} />
+                  도구
+                </label>
+                <select
+                  className="select-field"
+                  value={member.megaForm !== 'base' ? member.megaForm : member.item || 'none'}
+                  onChange={(e) => onItemChange(member.id, e.target.value)}
+                >
+                  <option value="none">없음</option>
+                  {megas.length > 0 && (
+                    <optgroup label="메가스톤">
+                      {megas.map((m) => (
+                        <option key={m.key} value={m.key}>
+                          {megaStoneName(base.name, m.key)} ({m.name})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <optgroup label="능력치 변화 도구">
+                    {HELD_ITEMS.filter((it) => it.statKey).map((it) => (
+                      <option key={it.key} value={it.key}>
+                        {it.name} ({it.note})
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="기타 도구">
+                    {HELD_ITEMS.filter((it) => !it.statKey).map((it) => (
+                      <option key={it.key} value={it.key}>
+                        {it.name} ({it.note})
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+
               <div className={`trait-total ${pointTotal >= MAX_TRAIT_TOTAL ? 'full' : ''}`}>
                 특성치 합계 {pointTotal} / {MAX_TRAIT_TOTAL}
               </div>
@@ -1104,12 +1180,15 @@ function StatCalculatorSection({ team, onPointsChange, onNatureChange }) {
                 {STAT_META.map((s) => {
                   const isHp = s.key === 'hp'
                   const mod = isHp ? 1 : natureModFor(member.nature, s.key)
-                  const value = calcStat({
+                  let value = calcStat({
                     base: eff.stats[s.key],
                     points: member.points[s.key],
                     isHp,
                     natureMod: mod,
                   })
+                  const activeItem = HELD_ITEM_BY_KEY.get(member.item)
+                  const isItemBoosted = activeItem?.statKey === s.key
+                  if (isItemBoosted) value = Math.floor(value * activeItem.mult)
                   const widthPct = Math.min(100, (value / COMPUTED_STAT_SCALE_MAX) * 100)
                   return (
                     <div className="stat-row" key={s.key}>
@@ -1117,6 +1196,7 @@ function StatCalculatorSection({ team, onPointsChange, onNatureChange }) {
                         {s.label}
                         {mod > 1 && <span className="nature-arrow up">▲</span>}
                         {mod < 1 && <span className="nature-arrow down">▼</span>}
+                        {isItemBoosted && <span className="item-arrow">🔧</span>}
                       </span>
                       <div className="stat-row-track">
                         <div
@@ -1230,9 +1310,10 @@ function buildGeminiPrompt(scored, oppEffective, pickCount, formatKey, formatLab
   const teamDesc = scored
     .map((m, i) => {
       const natureName = NATURE_BY_KEY.get(m.nature)?.name || m.nature
+      const itemName = HELD_ITEM_BY_KEY.get(m.item)?.name || '없음'
       return `${i + 1}. ${m.name} [역할: ${ROLE_LABEL[m.role] ?? '미지정'}] (타입: ${m.types
         .map((t) => TYPE_LABEL_KO[t])
-        .join('/')}, 성격: ${natureName}, 실전 능력치: ${statsLine(m.realStats)}, 상대 팀 대비 평균 상성 점수: ${m.avg.toFixed(2)})`
+        .join('/')}, 성격: ${natureName}, 도구: ${itemName}, 실전 능력치: ${statsLine(m.realStats)}, 상대 팀 대비 평균 상성 점수: ${m.avg.toFixed(2)})`
     })
     .join('\n')
   const oppDesc = oppEffective
@@ -1313,7 +1394,8 @@ function PickAdvisorPage({
           ...eff,
           role: m.role,
           nature: m.nature,
-          realStats: computeRealStats(eff.stats, m.nature, m.points),
+          item: m.item,
+          realStats: applyItemToStats(computeRealStats(eff.stats, m.nature, m.points), m.item),
         }
       }),
     [team]
@@ -1710,7 +1792,14 @@ export default function App() {
       if (prev.length >= MAX_TEAM_SIZE) return prev
       return [
         ...prev,
-        { id, megaForm: 'base', role: '', nature: DEFAULT_NATURE, points: emptyTraitPoints() },
+        {
+          id,
+          megaForm: 'base',
+          role: '',
+          nature: DEFAULT_NATURE,
+          points: emptyTraitPoints(),
+          item: DEFAULT_ITEM,
+        },
       ]
     })
   }
@@ -1719,8 +1808,17 @@ export default function App() {
     setTeam((prev) => prev.filter((m) => m.id !== id))
   }
 
-  function updateForm(id, megaForm) {
-    setTeam((prev) => prev.map((m) => (m.id === id ? { ...m, megaForm } : m)))
+  // 도구 선택창은 메가스톤과 일반 도구를 한 슬롯에서 고른다. 메가스톤을 고르면 megaForm이
+  // 바뀌고 다른 도구는 해제되며, 일반 도구를 고르면 반대로 폼이 기본형으로 돌아간다.
+  function updateItem(id, value) {
+    setTeam((prev) =>
+      prev.map((m) => {
+        if (m.id !== id) return m
+        if (ALL_MEGA_KEYS.has(value)) return { ...m, megaForm: value, item: DEFAULT_ITEM }
+        if (value === 'none') return { ...m, megaForm: 'base', item: DEFAULT_ITEM }
+        return { ...m, megaForm: 'base', item: value }
+      })
+    )
   }
 
   function updateRole(id, role) {
@@ -1770,7 +1868,6 @@ export default function App() {
           <PartySection
             team={team}
             onRemove={removeMember}
-            onFormChange={updateForm}
             onRoleChange={updateRole}
             presets={teamPresets}
             onSavePreset={saveTeamPreset}
@@ -1785,6 +1882,7 @@ export default function App() {
             team={team}
             onPointsChange={updatePoints}
             onNatureChange={updateNature}
+            onItemChange={updateItem}
           />
         </>
       ) : (
