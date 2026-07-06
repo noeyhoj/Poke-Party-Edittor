@@ -522,6 +522,22 @@ body {
   padding: 4px 2px;
 }
 
+.item-readonly-badge {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--violet);
+  background: var(--violet-dim);
+  border: 1px solid rgba(140, 107, 255, 0.35);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
 .speed-only-label {
   font-family: var(--font-mono);
   font-size: 12.5px;
@@ -592,6 +608,12 @@ body {
 .select-field:focus {
   outline: none;
   border-color: var(--violet);
+}
+
+.select-field:disabled {
+  cursor: not-allowed;
+  color: var(--text-faint);
+  background: var(--card-bg-hover);
 }
 
 /* ── Threat matrix ─────────────────────────────── */
@@ -1008,6 +1030,11 @@ tr.sum-row td {
 
 .nature-arrow.down {
   color: var(--cyan);
+}
+
+.item-arrow {
+  font-size: 10px;
+  margin-left: 3px;
 }
 
 /* ── Page navigation ───────────────────────────── */
