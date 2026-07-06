@@ -413,27 +413,6 @@ body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.legal-badge {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  font-weight: 700;
-  border: 1px solid transparent;
-}
-
-.legal-badge.ok {
-  color: var(--green);
-  background: var(--green-dim);
-  border-color: rgba(61, 214, 140, 0.35);
-}
-
-.legal-badge.check {
-  color: var(--amber);
-  background: var(--amber-dim);
-  border-color: rgba(245, 166, 35, 0.35);
-}
-
 .mega-badge {
   font-family: var(--font-mono);
   font-size: 10.5px;
