@@ -24,26 +24,60 @@ const DEFAULT_NATURE = 'hardy'
 const DEFAULT_ITEM = 'none'
 
 // 메가스톤 외에 실전에서 자주 쓰이는 대표 도구들. statKey/mult가 있는 항목만 실전 능력치에 반영된다.
-// (실제 게임 내 공식 한국어 명칭 기준)
+// (실제 게임 내 공식 한국어 명칭 기준으로 검증)
 const HELD_ITEMS = [
   // ── 능력치를 직접 배율로 바꾸는 도구 ──
-  { key: 'choice-band', name: '구애머리띠', statKey: 'attack', mult: 1.5, note: '공격 ×1.5 (기술 고정)' },
-  { key: 'choice-specs', name: '구애안경', statKey: 'spAttack', mult: 1.5, note: '특공 ×1.5 (기술 고정)' },
-  { key: 'choice-scarf', name: '구애스카프', statKey: 'speed', mult: 1.5, note: '스피드 ×1.5 (기술 고정)' },
-  { key: 'assault-vest', name: '돌격조끼', statKey: 'spDefense', mult: 1.5, note: '특방 ×1.5 (변화기 사용 불가)' },
+  { key: 'choice-band', name: '구애머리띠', category: 'stat', statKey: 'attack', mult: 1.5, note: '공격 ×1.5 (기술 고정)' },
+  { key: 'choice-specs', name: '구애안경', category: 'stat', statKey: 'spAttack', mult: 1.5, note: '특공 ×1.5 (기술 고정)' },
+  { key: 'choice-scarf', name: '구애스카프', category: 'stat', statKey: 'speed', mult: 1.5, note: '스피드 ×1.5 (기술 고정)' },
+  { key: 'assault-vest', name: '돌격조끼', category: 'stat', statKey: 'spDefense', mult: 1.5, note: '특방 ×1.5 (변화기 사용 불가)' },
   // ── 정보 제공용(실전 능력치 수치에는 반영되지 않는 배틀 효과) ──
-  { key: 'leftovers', name: '먹다남은음식', note: '매 턴 최대 HP 1/16 회복' },
-  { key: 'life-orb', name: '생명의 구슬', note: '기술 위력 ×1.3, 사용 시 반동 데미지(최대 HP 1/10)' },
-  { key: 'focus-sash', name: '기합의띠', note: 'HP가 가득 찬 상태에서 원킬 공격을 HP 1로 버팀 (1회용)' },
-  { key: 'focus-band', name: '기합의머리띠', note: '기절할 공격을 약 10% 확률로 HP 1로 버팀 (재사용 가능)' },
-  { key: 'rocky-helmet', name: '울퉁불퉁멧', note: '접촉 기술을 맞으면 상대에게 최대 HP 1/6 반사 데미지' },
-  { key: 'expert-belt', name: '달인의띠', note: '효과가 굉장한(약점을 찌르는) 기술의 위력 ×1.2' },
-  { key: 'weakness-policy', name: '약점보험', note: '효과가 굉장한 공격을 맞으면 공격·특공 2랭크 상승 (1회용)' },
-  { key: 'air-balloon', name: '풍선', note: '땅 타입 기술 무효화 (피격 시 소멸)' },
-  { key: 'shell-bell', name: '조개껍질방울', note: '입힌 데미지의 1/8만큼 HP 회복' },
-  { key: 'big-root', name: '큰뿌리', note: 'HP 흡수 기술의 회복량 증가' },
-  { key: 'eviolite', name: '진화의휘석', note: '진화 가능한(미완성) 포켓몬 한정 방어·특방 ×1.5 (자동 계산에는 미반영, 진화 가능 여부 직접 확인)' },
+  { key: 'leftovers', name: '먹다남은음식', category: 'info', note: '매 턴 최대 HP 1/16 회복' },
+  { key: 'life-orb', name: '생명의 구슬', category: 'info', note: '기술 위력 ×1.3, 사용 시 반동 데미지(최대 HP 1/10)' },
+  { key: 'focus-sash', name: '기합의띠', category: 'info', note: 'HP가 가득 찬 상태에서 원킬 공격을 HP 1로 버팀 (1회용)' },
+  { key: 'focus-band', name: '기합의머리띠', category: 'info', note: '기절할 공격을 약 10% 확률로 HP 1로 버팀 (재사용 가능)' },
+  { key: 'rocky-helmet', name: '울퉁불퉁멧', category: 'info', note: '접촉 기술을 맞으면 상대에게 최대 HP 1/6 반사 데미지' },
+  { key: 'expert-belt', name: '달인의띠', category: 'info', note: '효과가 굉장한(약점을 찌르는) 기술의 위력 ×1.2' },
+  { key: 'weakness-policy', name: '약점보험', category: 'info', note: '효과가 굉장한 공격을 맞으면 공격·특공 2랭크 상승 (1회용)' },
+  { key: 'air-balloon', name: '풍선', category: 'info', note: '땅 타입 기술 무효화 (피격 시 소멸)' },
+  { key: 'shell-bell', name: '조개껍질방울', category: 'info', note: '입힌 데미지의 1/8만큼 HP 회복' },
+  { key: 'big-root', name: '큰뿌리', category: 'info', note: 'HP 흡수 기술의 회복량 증가' },
+  { key: 'eviolite', name: '진화의휘석', category: 'info', note: '진화 가능한(미완성) 포켓몬 한정 방어·특방 ×1.5 (자동 계산에는 미반영, 진화 가능 여부 직접 확인)' },
+  // ── 나무열매 (1회용 소모품) ──
+  { key: 'sitrus-berry', name: '자뭉열매', category: 'berry', note: 'HP가 최대 HP의 절반 이하일 때 최대 HP의 1/4 회복 (1회용)' },
+  { key: 'oran-berry', name: '오랭열매', category: 'berry', note: 'HP가 최대 HP의 절반 이하일 때 HP 10 회복 (1회용)' },
+  { key: 'lum-berry', name: '리샘열매', category: 'berry', note: '모든 상태이상·혼란을 즉시 회복 (1회용)' },
+  { key: 'occa-berry', name: '오카열매', category: 'berry', note: '효과가 굉장한 불꽃 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'passho-berry', name: '꼬시개열매', category: 'berry', note: '효과가 굉장한 물 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'wacan-berry', name: '초나열매', category: 'berry', note: '효과가 굉장한 전기 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'rindo-berry', name: '린드열매', category: 'berry', note: '효과가 굉장한 풀 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'yache-berry', name: '플카열매', category: 'berry', note: '효과가 굉장한 얼음 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'chople-berry', name: '로플열매', category: 'berry', note: '효과가 굉장한 격투 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'kebia-berry', name: '으름열매', category: 'berry', note: '효과가 굉장한 독 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'shuca-berry', name: '슈캐열매', category: 'berry', note: '효과가 굉장한 땅 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'coba-berry', name: '바코열매', category: 'berry', note: '효과가 굉장한 비행 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'payapa-berry', name: '야파열매', category: 'berry', note: '효과가 굉장한 에스퍼 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'tanga-berry', name: '리체열매', category: 'berry', note: '효과가 굉장한 벌레 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'charti-berry', name: '루미열매', category: 'berry', note: '효과가 굉장한 바위 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'kasib-berry', name: '수불열매', category: 'berry', note: '효과가 굉장한 고스트 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'haban-berry', name: '하반열매', category: 'berry', note: '효과가 굉장한 드래곤 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'colbur-berry', name: '마코열매', category: 'berry', note: '효과가 굉장한 악 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'babiri-berry', name: '바리비열매', category: 'berry', note: '효과가 굉장한 강철 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'roseli-berry', name: '로셀열매', category: 'berry', note: '효과가 굉장한 페어리 타입 기술의 피해를 절반으로 경감 (1회용)' },
+  { key: 'chilan-berry', name: '카리열매', category: 'berry', note: '노말 타입 기술의 피해를 절반으로 경감 (효과 굉장 여부 무관, 1회용)' },
+  { key: 'liechi-berry', name: '치리열매', category: 'berry', note: 'HP가 최대 HP의 1/4 이하일 때 공격 1단계 상승 (1회용)' },
+  { key: 'ganlon-berry', name: '용아열매', category: 'berry', note: 'HP가 최대 HP의 1/4 이하일 때 방어 1단계 상승 (1회용)' },
+  { key: 'petaya-berry', name: '야타비열매', category: 'berry', note: 'HP가 최대 HP의 1/4 이하일 때 특공 1단계 상승 (1회용)' },
+  { key: 'apicot-berry', name: '규살열매', category: 'berry', note: 'HP가 최대 HP의 1/4 이하일 때 특방 1단계 상승 (1회용)' },
+  { key: 'salac-berry', name: '캄라열매', category: 'berry', note: 'HP가 최대 HP의 1/4 이하일 때 스피드 1단계 상승 (1회용)' },
+  { key: 'starf-berry', name: '스타열매', category: 'berry', note: 'HP가 최대 HP의 1/4 이하일 때 랜덤 능력치 2단계 상승 (1회용)' },
+  { key: 'custap-berry', name: '애슈열매', category: 'berry', note: 'HP가 최대 HP의 1/4 이하일 때 그 턴 우선도 상승 (1회용)' },
+  { key: 'micle-berry', name: '미클열매', category: 'berry', note: 'HP가 최대 HP의 1/4 이하일 때 다음 기술 명중률 ×1.2 (1회용)' },
+  { key: 'jaboca-berry', name: '자보열매', category: 'berry', note: '물리 기술에 맞으면 상대에게 최대 HP 1/8 반동 데미지 (1회용)' },
+  { key: 'rowap-berry', name: '애터열매', category: 'berry', note: '특수 기술에 맞으면 상대에게 최대 HP 1/8 반동 데미지 (1회용)' },
+  { key: 'enigma-berry', name: '의문열매', category: 'berry', note: '효과가 굉장한 공격을 맞으면 최대 HP 1/4 회복 (1회용)' },
 ]
+const HELD_ITEM_CATEGORY_LABEL = { stat: '능력치 변화 도구', info: '기타 도구', berry: '나무열매' }
 const HELD_ITEM_BY_KEY = new Map(HELD_ITEMS.map((it) => [it.key, it]))
 const ALL_MEGA_KEYS = new Set(Object.values(MEGA_EVOLUTIONS).flat().map((v) => v.key))
 
@@ -293,14 +327,6 @@ function TypeBadge({ type }) {
   )
 }
 
-function LegalBadge({ legal }) {
-  return (
-    <span className={`legal-badge ${legal}`}>
-      {legal === 'ok' ? '참전 OK' : '참전 확인'}
-    </span>
-  )
-}
-
 function Header({ theme, onToggleTheme }) {
   return (
     <div className="hero">
@@ -326,9 +352,8 @@ function Header({ theme, onToggleTheme }) {
         <AlertTriangle size={16} />
         <span>
           포켓몬 챔피언스는 공식 API가 제공되지 않습니다. 타입/스피드 등 포켓몬 원본 데이터는
-          PokeAPI 기준으로 정리했지만, 참전 표시(OK/확인)는 챔피언스 레귤레이션을 반영한 것이 아니라
-          전설/환상의 포켓몬 여부로 나눈 참고용 구분입니다. 실제 레귤레이션은 반드시 게임 내에서
-          다시 확인해주세요.
+          PokeAPI 기준으로 정리한 참고용 자료이니, 실제 참전 가능 여부와 레귤레이션은 반드시
+          게임 내에서 다시 확인해주세요.
         </span>
       </div>
     </div>
@@ -460,7 +485,6 @@ function PokemonPicker({ selectedIds, onToggle, maxSize }) {
                     ))}
                   </div>
                   <div className="badge-row">
-                    <LegalBadge legal={p.legal} />
                     {canMegaEvolve(p) && <span className="mega-badge">메가 가능</span>}
                     {p.regionalForm === 'hisui' && <span className="hisui-badge">히스이 폼</span>}
                   </div>
@@ -644,7 +668,6 @@ function PartySection({
                   <TypeBadge key={t} type={t} />
                 ))}
               </div>
-              <LegalBadge legal={base.legal} />
               <div className="speed-only">
                 <span className="speed-only-label">스피드</span>
                 <span className="speed-only-value">{realStats.speed}</span>
@@ -1036,8 +1059,7 @@ function RoleBalanceSection({ team }) {
 
       <div className="footnote">
         <Info size={12} style={{ verticalAlign: -1, marginRight: 4 }} />
-        타입/스피드 데이터는 PokeAPI를 기반으로 정적으로 내장된 참고용 자료이며, 참전 여부(OK/확인)
-        표시는 챔피언스 공식 API가 아닌 전설/환상의 포켓몬 여부로 나눈 참고용 구분입니다.
+        타입/스피드 데이터는 PokeAPI를 기반으로 정적으로 내장된 참고용 자료입니다.
         실제 편성 전 게임 내 정보로 다시 확인하세요.
       </div>
     </section>
@@ -1138,20 +1160,15 @@ function StatCalculatorSection({ team, onPointsChange, onNatureChange, onItemCha
                       ))}
                     </optgroup>
                   )}
-                  <optgroup label="능력치 변화 도구">
-                    {HELD_ITEMS.filter((it) => it.statKey).map((it) => (
-                      <option key={it.key} value={it.key}>
-                        {it.name} ({it.note})
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="기타 도구">
-                    {HELD_ITEMS.filter((it) => !it.statKey).map((it) => (
-                      <option key={it.key} value={it.key}>
-                        {it.name} ({it.note})
-                      </option>
-                    ))}
-                  </optgroup>
+                  {Object.entries(HELD_ITEM_CATEGORY_LABEL).map(([category, label]) => (
+                    <optgroup label={label} key={category}>
+                      {HELD_ITEMS.filter((it) => it.category === category).map((it) => (
+                        <option key={it.key} value={it.key}>
+                          {it.name} ({it.note})
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
                 </select>
               </div>
 
@@ -1492,7 +1509,6 @@ function PickAdvisorPage({
                       <TypeBadge key={t} type={t} />
                     ))}
                   </div>
-                  <LegalBadge legal={o.base.legal} />
                   <div className="speed-only">
                     <span className="speed-only-label">스피드</span>
                     <span className="speed-only-value">{eff.stats.speed}</span>
