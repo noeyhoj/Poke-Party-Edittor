@@ -1,0 +1,13 @@
+node_modules
+dist
+dist-ssr
+*.local
+
+# PokeAPI 응답 캐시 (재생성 가능, 용량 큼)
+scripts/.cache
+
+# OS / editor
+.DS_Store
+
+# Claude Code local settings
+.claude/settings.local.json
