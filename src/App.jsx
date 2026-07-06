@@ -364,6 +364,7 @@ function PokemonPicker({ selectedIds, onToggle, maxSize }) {
   const [search, setSearch] = useState('')
   const [activeGens, setActiveGens] = useState(new Set())
   const [activeTypes, setActiveTypes] = useState(new Set())
+  const [finalEvoOnly, setFinalEvoOnly] = useState(false)
 
   const isFull = maxSize != null && selectedIds.size >= maxSize
 
@@ -372,9 +373,10 @@ function PokemonPicker({ selectedIds, onToggle, maxSize }) {
       if (search.trim() && !p.name.includes(search.trim())) return false
       if (activeGens.size > 0 && !activeGens.has(generationOf(p.dex))) return false
       if (activeTypes.size > 0 && !p.types.some((t) => activeTypes.has(t))) return false
+      if (finalEvoOnly && !p.finalEvo) return false
       return true
     })
-  }, [search, activeGens, activeTypes])
+  }, [search, activeGens, activeTypes, finalEvoOnly])
 
   function toggleGen(gen) {
     setActiveGens((prev) => {
@@ -411,6 +413,14 @@ function PokemonPicker({ selectedIds, onToggle, maxSize }) {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <label className="final-evo-toggle">
+            <input
+              type="checkbox"
+              checked={finalEvoOnly}
+              onChange={(e) => setFinalEvoOnly(e.target.checked)}
+            />
+            최종 진화체만 보기
+          </label>
         </div>
 
         <div className="gen-chip-row">

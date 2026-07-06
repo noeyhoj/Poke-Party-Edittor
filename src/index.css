@@ -222,6 +222,28 @@ body {
   border-color: var(--violet);
 }
 
+.final-evo-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--text-dim);
+  font-size: 13.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.final-evo-toggle input {
+  accent-color: var(--violet);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
 .gen-chip-row {
   display: flex;
   flex-wrap: wrap;
