@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle, Search, RotateCcw, Check, X,
-  Sword, Shield, HeartHandshake, Sparkles, Users, Info,
+  Sword, Shield, HeartHandshake, Sparkles, Users, Info, Sun, Moon,
 } from 'lucide-react'
 import { TYPES, TYPE_LABEL_KO, TYPE_COLOR, combinedMultiplier, getMultiplier } from './data/typeChart'
 import { POKEMON } from './data/pokemonData'
@@ -11,6 +11,7 @@ import { NATURES, NATURE_BY_KEY } from './data/natures'
 const STORAGE_KEY = 'poke-party-editor:team'
 const TEAM_PRESETS_KEY = 'poke-party-editor:presets:team'
 const OPPONENT_PRESETS_KEY = 'poke-party-editor:presets:opponent'
+const THEME_STORAGE_KEY = 'poke-party-editor:theme'
 const MAX_TEAM_SIZE = 6
 const SPEED_SCALE_MAX = 200
 
@@ -253,11 +254,21 @@ function LegalBadge({ legal }) {
   )
 }
 
-function Header() {
+function Header({ theme, onToggleTheme }) {
   return (
     <div className="hero">
-      <div className="hero-kicker">
-        <Sparkles size={14} /> POKE PARTY EDITOR
+      <div className="hero-top-row">
+        <div className="hero-kicker">
+          <Sparkles size={14} /> POKE PARTY EDITOR
+        </div>
+        <button
+          className="theme-toggle-btn"
+          onClick={onToggleTheme}
+          aria-label="다크/라이트 모드 전환"
+        >
+          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          {theme === 'dark' ? '라이트 모드' : '다크 모드'}
+        </button>
       </div>
       <h1>포켓몬 챔피언스 파티 상성 분석기</h1>
       <p>
@@ -1608,12 +1619,22 @@ function PickAdvisorPage({
 
 export default function App() {
   const [page, setPage] = useState('builder')
+  const [theme, setTheme] = useState(() => localStorage.getItem(THEME_STORAGE_KEY) || 'dark')
   const [team, setTeam] = useState(() => loadState().team)
   const [opponent, setOpponent] = useState(() => loadState().opponent)
   const [teamPresets, setTeamPresets] = useState(() => loadPresets(TEAM_PRESETS_KEY, sanitizeTeamArray))
   const [opponentPresets, setOpponentPresets] = useState(() =>
     loadPresets(OPPONENT_PRESETS_KEY, sanitizeOpponentArray)
   )
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem(THEME_STORAGE_KEY, theme)
+  }, [theme])
+
+  function toggleTheme() {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
+  }
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ team, opponent }))
@@ -1713,7 +1734,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header />
+      <Header theme={theme} onToggleTheme={toggleTheme} />
       <div className="page-nav">
         <button
           className={`page-nav-btn ${page === 'builder' ? 'active' : ''}`}
