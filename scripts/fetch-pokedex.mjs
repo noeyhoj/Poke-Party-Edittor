@@ -232,7 +232,17 @@ async function processSpecies(id) {
     }
   }
 
-  return { dex: id, name, types, stats, legal, megas, hisuiForms }
+  return {
+    dex: id,
+    name,
+    types,
+    stats,
+    legal,
+    megas,
+    hisuiForms,
+    speciesName: species.name,
+    evolvesFromName: species.evolves_from_species ? species.evolves_from_species.name : null,
+  }
 }
 
 async function mapWithLimit(items, limit, fn, onProgress) {
@@ -306,6 +316,11 @@ async function main() {
 
   entries.sort((a, b) => a.dex - b.dex)
 
+  // 어떤 종이 "최종 진화체"인지는 다른 종의 evolves_from_species가 자신을 가리키는지로 판별한다.
+  // (즉, 나에게서 진화해 나가는 다음 단계가 하나도 없으면 최종 진화체)
+  const evolvesFromSet = new Set(entries.map((e) => e.evolvesFromName).filter(Boolean))
+  const isFinalEvo = (e) => !evolvesFromSet.has(e.speciesName)
+
   // 기본 폼 + 히스이 폼을 같은 목록에 펼쳐 담되, 서로 다른 고유 id로 구분한다.
   // (히스이 폼은 국가도감 번호가 기본 폼과 같아 dex만으로는 구분할 수 없다.)
   const flatEntries = []
@@ -318,6 +333,7 @@ async function main() {
       stats: e.stats,
       legal: e.legal,
       regionalForm: null,
+      finalEvo: isFinalEvo(e),
     })
     for (const h of e.hisuiForms || []) {
       flatEntries.push({
@@ -328,6 +344,7 @@ async function main() {
         stats: h.stats,
         legal: e.legal,
         regionalForm: 'hisui',
+        finalEvo: isFinalEvo(e),
       })
     }
   }
@@ -339,6 +356,7 @@ async function main() {
   lines.push("// legal: 'ok'    -> 챔피언스에서 자주 통용되는 포켓몬 (참고용)")
   lines.push("// legal: 'check' -> 전설/준전설/환상의 포켓몬. 레귤레이션에 따라 참전 여부가 갈릴 수 있어 확인 필요")
   lines.push("// regionalForm: null -> 기본 폼 / 'hisui' -> 포켓몬 레전드 아르세우스의 히스이 지방 폼 (메가진화와 달리 별도 포켓몬으로 취급)")
+  lines.push('// finalEvo: 더 이상 진화하지 않는(다른 종이 이 종에서 진화해 나가지 않는) 최종 진화체 여부')
   lines.push('export const POKEMON = [')
   for (const e of flatEntries) {
     const gen = genLabel(e.dex)
@@ -351,7 +369,7 @@ async function main() {
     const statsStr = `{ hp: ${s.hp}, attack: ${s.attack}, defense: ${s.defense}, spAttack: ${s.spAttack}, spDefense: ${s.spDefense}, speed: ${s.speed} }`
     const regionalFormStr = e.regionalForm ? `'${e.regionalForm}'` : 'null'
     lines.push(
-      `  { id: '${e.id}', dex: ${e.dex}, name: '${jsEscape(e.name)}', types: [${typesStr}], stats: ${statsStr}, legal: '${e.legal}', regionalForm: ${regionalFormStr} },`
+      `  { id: '${e.id}', dex: ${e.dex}, name: '${jsEscape(e.name)}', types: [${typesStr}], stats: ${statsStr}, legal: '${e.legal}', regionalForm: ${regionalFormStr}, finalEvo: ${e.finalEvo} },`
     )
   }
   lines.push(']')
