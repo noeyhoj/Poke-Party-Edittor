@@ -13,7 +13,7 @@ const TEAM_PRESETS_KEY = 'poke-party-editor:presets:team'
 const OPPONENT_PRESETS_KEY = 'poke-party-editor:presets:opponent'
 const THEME_STORAGE_KEY = 'poke-party-editor:theme'
 const MAX_TEAM_SIZE = 6
-const SPEED_SCALE_MAX = 200
+const SPEED_SCALE_MAX = 220
 
 // 포켓몬 챔피언스는 레벨 50 고정 실전 배틀, 개체값(IV) 31 고정을 전제로 한다.
 const BATTLE_LEVEL = 50
@@ -206,6 +206,12 @@ function getEffective(member) {
     }
   }
   return { name: base.name, types: base.types, stats: base.stats, isMega: false, spriteId: base.id }
+}
+
+// 종족값 폼(메가진화 포함)에 성격·특성치를 반영한 실전 능력치를 계산한다.
+function getRealStats(member) {
+  const eff = getEffective(member)
+  return computeRealStats(eff.stats, member.nature, member.points)
 }
 
 function PokemonIcon({ name, types, size = 52, spriteId }) {
@@ -583,6 +589,7 @@ function PartySection({
           }
           const base = POKEMON_BY_ID.get(member.id)
           const eff = getEffective(member)
+          const realStats = getRealStats(member)
           const megas = canMegaEvolve(base) ? MEGA_EVOLUTIONS[base.dex] || [] : []
           return (
             <div className="party-card" key={member.id}>
@@ -599,7 +606,7 @@ function PartySection({
               <LegalBadge legal={base.legal} />
               <div className="speed-only">
                 <span className="speed-only-label">스피드</span>
-                <span className="speed-only-value">{eff.stats.speed}</span>
+                <span className="speed-only-value">{realStats.speed}</span>
               </div>
 
               {megas.length > 0 && (
@@ -890,7 +897,10 @@ function AceCoverSection({ team }) {
 
 function SpeedTierSection({ team }) {
   const effectiveTeam = useMemo(
-    () => team.map((m) => ({ id: m.id, ...getEffective(m) })).sort((a, b) => b.stats.speed - a.stats.speed),
+    () =>
+      team
+        .map((m) => ({ id: m.id, ...getEffective(m), speed: getRealStats(m).speed }))
+        .sort((a, b) => b.speed - a.speed),
     [team]
   )
 
@@ -918,12 +928,15 @@ function SpeedTierSection({ team }) {
         <span className="section-num">05</span>
         <h2>스피드 층 확인</h2>
       </div>
-      <p className="section-sub">스피드 내림차순 정렬. 메가진화 폼을 선택하면 즉시 반영됩니다.</p>
+      <p className="section-sub">
+        성격·특성치가 반영된 실전 스피드 내림차순 정렬입니다. 메가진화 폼이나 실전 능력치 계산기의
+        설정을 바꾸면 즉시 반영됩니다.
+      </p>
 
       <div className="speed-chart">
         {effectiveTeam.map((m, idx) => {
           const tier = tierOf(idx)
-          const widthPct = Math.min(100, (m.stats.speed / SPEED_SCALE_MAX) * 100)
+          const widthPct = Math.min(100, (m.speed / SPEED_SCALE_MAX) * 100)
           return (
             <div className="speed-row" key={m.id}>
               <div className="speed-label">
@@ -936,7 +949,7 @@ function SpeedTierSection({ team }) {
                   style={{ width: `${widthPct}%`, backgroundColor: tier.color }}
                 />
               </div>
-              <div className="speed-value">{m.stats.speed}</div>
+              <div className="speed-value">{m.speed}</div>
             </div>
           )
         })}
@@ -1079,8 +1092,9 @@ function StatCalculatorSection({ team, onPointsChange, onNatureChange }) {
                       className="trait-input"
                       min={0}
                       max={MAX_TRAIT_PER_STAT}
-                      value={member.points[s.key]}
+                      value={member.points[s.key] === 0 ? '' : member.points[s.key]}
                       onChange={(e) => onPointsChange(member.id, s.key, e.target.value)}
+                      placeholder="0"
                     />
                   </div>
                 ))}
